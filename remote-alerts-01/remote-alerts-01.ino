@@ -59,6 +59,8 @@ void onEnableSilent() {
 void onDisable() {
   Serial.println("[ WEB ]-> DISABLED");
   enabled = 0;
+  ledState = 0;
+  digitalWrite(LED, LOW);
   sendStatus();
 }
 
@@ -70,7 +72,7 @@ void route() {
   server.on("/disable", onDisable);
 }
 
-void blinkBuzzDelay(int blinks, int blinkDelay = 100, int freq = 2000) {
+void blinkBuzzDelay(int blinks = 1, int blinkDelay = 100, int freq = 2000) {
   for (int i = 0; i < blinks; i++) {
     digitalWrite(LED, HIGH);
     tone(BUZZER, freq, blinkDelay);
@@ -134,10 +136,7 @@ void blink(long interval = 100, int blinks = 3, long pause = 500) {
 }
 
 void setup() {
-  pinMode(LED, OUTPUT);
-  pinMode(BUZZER, OUTPUT);
   blinkDelay();
-
   Serial.begin(115200);
   delay(3000);
   Serial.print("Configuring access point...");
@@ -157,10 +156,12 @@ void setup() {
   server.begin();
   route();
 
+  pinMode(LED, OUTPUT);
+  pinMode(BUZZER, OUTPUT);
   irrecv.enableIRIn();  // Start the receiver
   Serial.println();
   Serial.println("Started! Waiting for IR signal...");
-  blinkDelay(2);
+  blinkBuzzDelay(1, 50, 3500);
 }
 
 void loop() {
@@ -184,6 +185,8 @@ void loop() {
     if (results.value == 0xE240) {
       Serial.println("[ IR ]-> DISABLED");
       blinkDelay(2);
+      digitalWrite(LED, LOW);
+      ledState = 0;
       enabled = 0;
       silent = 0;
     }
