@@ -1,23 +1,27 @@
+//YWROBOT
+//Compatible with the Arduino IDE 1.0
+//Library version:1.1
 #include <LiquidCrystal_I2C.h>
 #include <arduino-timer.h>
 
 LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 auto timer = timer_create_default();
 
+const int LED = 9;
 const int BUTTON_LEFT = 10;
 const int BUTTON_MID = 11;
 const int BUTTON_RIGHT = 12;
 unsigned long lastDebounceTime = 0;
 unsigned long debounceDelay = 250;
 int inputEnabled = 1;
-int isRunning = 1;
+int isRunning = 0;
 int showSeconds = 0;
 long SECOND = 1000;
 long MINUTE = SECOND * 60;
 long HOUR = MINUTE * 60;
 const long TIME_BLOCK = MINUTE * 15;
 const long MIN_TIME = MINUTE * 15;
-const long START_TIME = MINUTE * 1;
+const long START_TIME = HOUR * 2;
 const long MAX_TIME = HOUR * 24;
 long timeLeft = START_TIME;
 
@@ -60,6 +64,7 @@ String lastReadableTime = getReadableTime(timeLeft);
 
 void setup() {
   Serial.begin(9600);
+  pinMode(LED, OUTPUT);
   pinMode(BUTTON_LEFT, INPUT_PULLUP);
   pinMode(BUTTON_MID, INPUT_PULLUP);
   pinMode(BUTTON_RIGHT, INPUT_PULLUP);
@@ -74,13 +79,14 @@ void setup() {
   updateTime();
 
   timer.every(1000, [] {
-    if (!isRunning) return;
-    timeLeft = timeLeft - SECOND;
-
-    String currentReadableTime = getReadableTime(timeLeft);
-    if (currentReadableTime != lastReadableTime) {
-      updateTime();
-      lastReadableTime = currentReadableTime;
+    if (isRunning == 1) {
+      timeLeft = timeLeft - SECOND;
+  
+      String currentReadableTime = getReadableTime(timeLeft);
+      if (currentReadableTime != lastReadableTime) {
+        updateTime();
+        lastReadableTime = currentReadableTime;
+      }
     }
   });
 }
@@ -108,14 +114,10 @@ void updateTime() {
   }
 }
 
-void stopTimer() {
-  isRunning = 0;
+void setPaused() {
+  lcd.setCursor(0,1);
+  lcd.print("...  PAUSED  ...");
 }
-
-void startTimer() {
-  isRunning = 0;
-}
-
 
 void loop() {
   timer.tick();
@@ -131,8 +133,18 @@ void loop() {
     } 
   }
 
+  // Reset time if left & right buttons are pressed at the same time.
+  if (buttonLeft == LOW && buttonRight == LOW && inputEnabled == 1) {
+    inputEnabled = 0;
+    isRunning = 0;
+    timeLeft = START_TIME;
+    updateTime();
+    lastDebounceTime = millis();
+    return;
+  }
+
   // Lower time when left button is pushed.
-  if (buttonLeft == LOW) {
+  if (buttonLeft == LOW && inputEnabled == 1) {
     inputEnabled = 0;
     timeLeft = timeLeft - TIME_BLOCK;
 
@@ -148,10 +160,16 @@ void loop() {
     inputEnabled = 0;
     
     if (isRunning == 1) {
-      stopTimer();
+      isRunning = 0;
+      setPaused();
+      digitalWrite(LED, LOW);
+      Serial.println("> PAUSED");
+    } else {
+      isRunning = 1;
+      digitalWrite(LED, HIGH);
+      Serial.println("> RUNNING");
     }
-    startTimer();
-    
+
     lastDebounceTime = millis();
   }
 
