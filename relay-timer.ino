@@ -7,6 +7,7 @@
 LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 auto timer = timer_create_default();
 
+const int RELAY = 8;
 const int LED = 9;
 const int BUTTON_LEFT = 10;
 const int BUTTON_MID = 11;
@@ -163,10 +164,12 @@ void loop() {
       isRunning = 0;
       setPaused();
       digitalWrite(LED, LOW);
+      digitalWrite(RELAY, LOW);
       Serial.println("> PAUSED");
     } else {
       isRunning = 1;
       digitalWrite(LED, HIGH);
+      digitalWrite(RELAY, HIGH);
       Serial.println("> RUNNING");
     }
 
