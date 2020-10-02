@@ -168,6 +168,7 @@ void loop() {
       Serial.println("> PAUSED");
     } else {
       isRunning = 1;
+      updateTime();
       digitalWrite(LED, HIGH);
       digitalWrite(RELAY, HIGH);
       Serial.println("> RUNNING");
